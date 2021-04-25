@@ -17,6 +17,9 @@
 
 package org.apache.openwhisk.runtime.java.action;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -49,8 +52,12 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javassist.ClassPool;
 import javassist.Loader;
+import org.apache.openwhisk.runtime.java.action.metrics.MemoryHelper;
+import org.apache.openwhisk.runtime.java.action.metrics.MetricsSupport;
 
 public class Proxy {
     private HttpServer server;
@@ -63,12 +70,26 @@ public class Proxy {
 
     private ConcurrentHashMap<String, Object> globals = new ConcurrentHashMap<>();
 
+    private MetricsSupport metricsSupport = MetricsSupport.get();
+
+    private final Timer invocationTimer;
+    private final Runtime memoryUsage;
+    private final AtomicInteger concurrentExecutions;
+    private final AtomicInteger maxConcurrentExecutions;
+
     public Proxy(int port) throws IOException {
         this.server = HttpServer.create(new InetSocketAddress(port), -1);
 
         this.server.createContext("/init", new InitHandler());
         this.server.createContext("/run", new RunHandler());
         this.server.setExecutor(Executors.newCachedThreadPool());
+
+        this.invocationTimer = metricsSupport.getMeterRegistry().timer("exec_time");
+        this.memoryUsage = metricsSupport.getMeterRegistry().gauge("memory_after", Collections.emptyList(), Runtime.getRuntime(),
+                                                                   MemoryHelper::currentMemoryUsage);
+
+        this.concurrentExecutions = metricsSupport.getMeterRegistry().gauge("concurrent_executions", new AtomicInteger(0));
+        this.maxConcurrentExecutions = metricsSupport.getMeterRegistry().gauge("max_concurrent_executions", new AtomicInteger(0));
     }
 
     public void start() {
@@ -93,6 +114,8 @@ public class Proxy {
         final String[] splittedEntrypoint = entrypoint.split("#");
         final String entrypointClassName = splittedEntrypoint[0];
         final String entrypointMethodName = splittedEntrypoint.length > 1 ? splittedEntrypoint[1] : "main";
+
+        metricsSupport.withFunctionName(entrypointClassName + "::" + entrypointMethodName);
 
         Class<?> mainClass = loader.loadClass(entrypointClassName);
 
@@ -181,6 +204,8 @@ public class Proxy {
                         ((Loader)loader).delegateLoadingOf("org.apache.openwhisk.runtime.java.action.");
                         ((Loader)loader).delegateLoadingOf("org.xmlpull.");
                         ((Loader)loader).delegateLoadingOf("okhttp3.");
+                        ((Loader)loader).delegateLoadingOf("io.micrometer");
+                        ((Loader)loader).delegateLoadingOf("io.prometheus");
 
                         // Add a translator to apply transformations to the loaded classes.
                         // TODO - there is a bug when loading minio!
@@ -211,61 +236,91 @@ public class Proxy {
                 Proxy.writeError(t, "Cannot invoke an uninitialized action.");
                 return;
             }
+            concurrentExecutions.incrementAndGet();
 
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             SecurityManager sm = System.getSecurityManager();
 
             try {
-                InputStream is = t.getRequestBody();
-                JsonParser parser = new JsonParser();
-                JsonObject body = parser.parse(new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))).getAsJsonObject();
-                JsonObject inputObject = body.getAsJsonObject("value");
-
-                HashMap<String, String> env = new HashMap<String, String>();
-                Set<Map.Entry<String, JsonElement>> entrySet = body.entrySet();
-                for(Map.Entry<String, JsonElement> entry : entrySet){
-                    try {
-                        if(!entry.getKey().equalsIgnoreCase("value"))
-                            env.put(String.format("__OW_%s", entry.getKey().toUpperCase()), entry.getValue().getAsString());
-                    } catch (Exception e) {}
-                }
-
-                // We always give a new classloader for a new invocation. It is used as an identifier.
-                Thread.currentThread().setContextClassLoader(new Loader(loader, ClassPool.getDefault()));
-                System.setSecurityManager(new WhiskSecurityManager());
-
-                // Prepare environment.
-                augmentEnv(env);
-
-                // TODO - make this call lazy.
-                translator.callStaticInitialisers(loader);
-
-                globals.put("time", new Date().getTime());
-
-                // User code starts running here.
-                JsonObject output = (JsonObject) main.invoke(null, inputObject, globals, Thread.currentThread().getContextClassLoader().hashCode());
-                // User code finished running here.
-
-                if (output == null) {
-                    throw new NullPointerException("The action returned null");
-                }
-
-                Proxy.writeResponse(t, 200, output.toString());
-                return;
-            } catch (InvocationTargetException ite) {
-                // These are exceptions from the action, wrapped in ite because
-                // of reflection
-                Throwable underlying = ite.getCause();
-                underlying.printStackTrace(System.err);
-                Proxy.writeError(t,
-                        "An error has occured while invoking the action (see logs for details): " + underlying);
+                invocationTimer.record(() -> processRequest(t));
             } catch (Exception e) {
-                e.printStackTrace(System.err);
-                Proxy.writeError(t, "An error has occurred (see logs for details): " + e);
-            } finally {
+
+            }
+            finally {
                 writeLogMarkers();
                 System.setSecurityManager(sm);
                 Thread.currentThread().setContextClassLoader(cl);
+                setMax();
+                concurrentExecutions.decrementAndGet();
+                metricsSupport.push();
+            }
+        }
+
+        private void setMax() {
+            final int current = concurrentExecutions.get();
+            final int max = maxConcurrentExecutions.get();
+
+            if (current > max)
+                maxConcurrentExecutions.compareAndSet(max, current);
+        }
+
+        private void processRequest(HttpExchange t) {
+            try {
+                try {
+                    InputStream is = t.getRequestBody();
+                    JsonParser parser = new JsonParser();
+                    JsonObject body = parser.parse(new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))).getAsJsonObject();
+                    JsonObject inputObject = body.getAsJsonObject("value");
+
+                    HashMap<String, String> env = new HashMap<>();
+                    Set<Map.Entry<String, JsonElement>> entrySet = body.entrySet();
+                    for (Map.Entry<String, JsonElement> entry : entrySet) {
+                        try {
+                            if (!entry.getKey().equalsIgnoreCase("value"))
+                                env.put(String.format("__OW_%s", entry.getKey().toUpperCase()), entry.getValue().getAsString());
+                        } catch (Exception e) {}
+                    }
+
+                    // We always give a new classloader for a new invocation. It is used as an identifier.
+                    Thread.currentThread().setContextClassLoader(new Loader(loader, ClassPool.getDefault()));
+                    System.setSecurityManager(new WhiskSecurityManager());
+
+                    // Prepare environment.
+                    augmentEnv(env);
+
+                    // TODO - make this call lazy.
+                    translator.callStaticInitialisers(loader);
+
+                    globals.put("time", new Date().getTime());
+
+                    // User code starts running here.
+                    JsonObject output = (JsonObject) main.invoke(null,
+                                                                 inputObject,
+                                                                 globals,
+                                                                 Thread.currentThread().getContextClassLoader().hashCode());
+                    // User code finished running here.
+
+                    if (output == null) {
+                        throw new NullPointerException("The action returned null");
+                    }
+
+                    Proxy.writeResponse(t, 200, output.toString());
+                    return;
+                } catch (InvocationTargetException ite) {
+                    // These are exceptions from the action, wrapped in ite because
+                    // of reflection
+                    Throwable underlying = ite.getCause();
+                    underlying.printStackTrace(System.err);
+                    Proxy.writeError(t,
+                                     "An error has occured while invoking the action (see logs for details): " + underlying);
+                    return;
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                    Proxy.writeError(t, "An error has occurred (see logs for details): " + e);
+                    return;
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
     }

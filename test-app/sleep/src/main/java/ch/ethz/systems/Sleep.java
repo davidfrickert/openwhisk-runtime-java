@@ -51,7 +51,7 @@ public class Sleep{
     }
 
 
-	private static int run(int time) {
+	public static int run(Integer time) {
         try{
             Thread.sleep(time);
         }catch(Exception e){}

@@ -26,6 +26,11 @@ dependencies {
     compile 'org.javassist:javassist:3.25.0-GA'
     compile 'io.minio:minio:6.0.11'
     compile group: 'org.tensorflow', name: 'tensorflow', version: '1.5.0'
+
+    // Metrics support
+    compile group: 'io.micrometer', name: 'micrometer-core', version: '1.6.6'
+    compile group: 'io.micrometer', name: 'micrometer-registry-prometheus', version: '1.6.6'
+    compile group: 'io.prometheus', name: 'simpleclient_pushgateway', version: '0.10.0'
 }
 
 jar {
