@@ -24,6 +24,8 @@ public class MetricsSupport {
     public static MetricsSupport get() {
         if (instance == null) {
             instance = new MetricsSupport(MetricsConfig.defaultConfigs());
+            instance.getMeterRegistry().config()
+                    .commonTags("framework", "photons");
         }
         return instance;
     }
@@ -59,7 +61,8 @@ public class MetricsSupport {
     }
 
     public void withFunctionName(String functionName) {
-        registry.config().commonTags("function.name", functionName);
+        registry.config()
+                .commonTags("function.name", functionName);
     }
 
 }
