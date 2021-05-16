@@ -57,10 +57,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import javassist.ClassPool;
 import javassist.Loader;
 import org.apache.openwhisk.runtime.java.action.metrics.MemoryHelper;
+import org.apache.openwhisk.runtime.java.action.metrics.MetricsPusher;
 import org.apache.openwhisk.runtime.java.action.metrics.MetricsSupport;
 
 public class Proxy {
     private HttpServer server;
+    private final MetricsPusher metricsPusher;
 
     private ClassLoader loader = null;
 
@@ -73,7 +75,6 @@ public class Proxy {
     private MetricsSupport metricsSupport = MetricsSupport.get();
 
     private final Timer invocationTimer;
-    private final Runtime memoryUsage;
     private final AtomicInteger concurrentExecutions;
     private final AtomicInteger maxConcurrentExecutions;
 
@@ -84,9 +85,12 @@ public class Proxy {
         this.server.createContext("/run", new RunHandler());
         this.server.setExecutor(Executors.newCachedThreadPool());
 
+        this.metricsPusher = new MetricsPusher(metricsSupport);
         this.invocationTimer = metricsSupport.getMeterRegistry().timer("exec_time");
-        this.memoryUsage = metricsSupport.getMeterRegistry().gauge("memory_after", Collections.emptyList(), Runtime.getRuntime(),
-                                                                   MemoryHelper::currentMemoryUsage);
+        metricsSupport.getMeterRegistry().gauge("memory_after", Collections.emptyList(), Runtime.getRuntime(),
+                                                MemoryHelper::heapMemory);
+        metricsSupport.getMeterRegistry().gauge("memory_rss", Collections.emptyList(), Runtime.getRuntime(),
+                                                MemoryHelper::rssMemory);
 
         this.concurrentExecutions = metricsSupport.getMeterRegistry().gauge("concurrent_executions", new AtomicInteger(0));
         this.maxConcurrentExecutions = metricsSupport.getMeterRegistry().gauge("max_concurrent_executions", new AtomicInteger(0));
@@ -94,6 +98,7 @@ public class Proxy {
 
     public void start() {
         server.start();
+        metricsPusher.start();
     }
 
     private static Path saveBase64EncodedFile(InputStream encoded) throws Exception {
@@ -307,7 +312,7 @@ public class Proxy {
                     Proxy.writeResponse(t, 200, output.toString());
                     return;
                 } catch (InvocationTargetException ite) {
-                    // These are exceptions from the action, wrapped in ite because
+                    // These are exceptions from the action, wrrapped in ite because
                     // of reflection
                     Throwable underlying = ite.getCause();
                     underlying.printStackTrace(System.err);
