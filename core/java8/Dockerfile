@@ -37,4 +37,4 @@ RUN cd /javaAction \
 	&& rm -rf /javaAction/src \
 	&& ./compileClassCache.sh
 
-CMD ["java", "-Dfile.encoding=UTF-8", "-Xloggc:/tmp/container.gc", "-Xjit:verbose={compileStart|compileEnd|inlining},vlog=/tmp/container.jit", "-XcompilationThreads1", "-Xshareclasses:cacheDir=/javaSharedCache,readonly", "-Xquickstart", "-jar", "/javaAction/build/libs/javaAction-all.jar"]
+CMD ["java", "-Dfile.encoding=UTF-8", "-Xmx=32m", "-Xms=32m", "-XX:+UseSerialGC", "-Xloggc:/tmp/container.gc", "-Xjit:verbose={compileStart|compileEnd|inlining},vlog=/tmp/container.jit", "-XcompilationThreads1", "-Xshareclasses:cacheDir=/javaSharedCache,readonly", "-Xquickstart", "-jar", "/javaAction/build/libs/javaAction-all.jar"]
