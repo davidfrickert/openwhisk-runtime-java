@@ -2,7 +2,7 @@ package org.apache.openwhisk.runtime.java.action.metrics;
 
 public interface MetricsConfig {
     default String getPushHost() {
-        return "192.168.1.100";
+        return "10.147.18.110";
     }
     default int getPushPort() {
         return 9092;
