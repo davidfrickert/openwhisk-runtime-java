@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-FROM adoptopenjdk/openjdk8-openj9:x86_64-ubuntu-jdk8u212-b04_openj9-0.14.2
+FROM adoptopenjdk:11.0.11_9-jdk-openj9-0.26.0
 
 RUN rm -rf /var/lib/apt/lists/* && apt-get clean && apt-get update \
 	&& apt-get install -y --no-install-recommends locales \
@@ -25,9 +25,9 @@ RUN rm -rf /var/lib/apt/lists/* && apt-get clean && apt-get update \
 ENV LANG="en_US.UTF-8" \
 	LANGUAGE="en_US:en" \
 	LC_ALL="en_US.UTF-8" \
-	VERSION=8 \
-	UPDATE=162 \
-	BUILD=12
+	VERSION=11 \
+	UPDATE=0 \
+	BUILD=11
 
 ADD proxy /javaAction
 
@@ -37,4 +37,4 @@ RUN cd /javaAction \
 	&& rm -rf /javaAction/src \
 	&& ./compileClassCache.sh
 
-CMD ["java", "-Dfile.encoding=UTF-8", "-Xshareclasses:cacheDir=/javaSharedCache,readonly", "-Xquickstart", "-jar", "/javaAction/build/libs/javaAction-all.jar"]
+CMD ["java", "-Dfile.encoding=UTF-8", "-Xloggc:/tmp/container.gc", "-Xjit:verbose={compileStart|compileEnd|inlining},vlog=/tmp/container.jit", "-XcompilationThreads1", "-Xshareclasses:cacheDir=/javaSharedCache,readonly", "-Xquickstart", "-jar", "/javaAction/build/libs/javaAction-all.jar"]
