@@ -11,11 +11,11 @@ import io.minio.MinioClient;
 public class FileHashing {
 
 	private static final int size = 2*1024*1024;
-    private static final String storage = "http://r630-01:9000";
+    private static final String storage = "http://nginx:9000";
 
     private static MinioClient createconn() {
         try {
-            return new MinioClient(storage, "keykey", "secretsecret");
+            return new MinioClient(storage, "minio", "minio123");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
