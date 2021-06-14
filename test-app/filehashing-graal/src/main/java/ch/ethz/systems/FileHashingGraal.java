@@ -4,13 +4,18 @@ import com.dfrickert.simpleminioclient.SimpleMinioClient;
 import com.dfrickert.simpleminioclient.auth.Credentials;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+
+import java.io.*;
+import java.lang.reflect.Array;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.xml.bind.DatatypeConverter;
 
 public class FileHashingGraal {
@@ -51,9 +56,33 @@ public class FileHashingGraal {
 
 		if (args.has("seed")) {
 			try {
+				final Instant beforeClientInit = Instant.now();
 				SimpleMinioClient client = connect(storage, new Credentials("minio", "minio123"));
+				final Duration clientInit = Duration.between(beforeClientInit, Instant.now());
+
+				final Instant beforeRun = Instant.now();
 				hash = run(client, args.get("seed").asInt());
+				final Duration run = Duration.between(beforeRun, Instant.now());
+
+				final Instant beforeClose = Instant.now();
 				client.close();
+				final Duration close = Duration.between(beforeClose, Instant.now());
+
+				final ArrayNode metrics = mapper.createArrayNode();
+
+				metrics.add(mapper.createObjectNode()
+						.put("name", "filehashing.httpclient.init")
+						.put("value", clientInit.toMillis()));
+
+				metrics.add(mapper.createObjectNode()
+						.put("name", "filehashing.run")
+						.put("value", run.toMillis()));
+
+				metrics.add(mapper.createObjectNode()
+						.put("name", "filehashing.httpclient.close")
+						.put("value", close.toMillis()));
+
+				response.set("metrics", metrics);
 			} catch (Exception e) {
 				StringWriter sw = new StringWriter();
 				PrintWriter pw = new PrintWriter(sw);
