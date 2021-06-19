@@ -213,6 +213,7 @@ public class Proxy {
                         ((Loader)loader).delegateLoadingOf("io.prometheus");
                         ((Loader) loader).delegateLoadingOf("jdk.internal.reflect.MethodAccessorImpl");
                         ((Loader) loader).delegateLoadingOf("jdk.internal.reflect.MagicAccessorImpl");
+                        ((Loader) loader).delegateLoadingOf("com.dfrickert.simpleminioclient");
 
                         // Add a translator to apply transformations to the loaded classes.
                         // TODO - there is a bug when loading minio!
