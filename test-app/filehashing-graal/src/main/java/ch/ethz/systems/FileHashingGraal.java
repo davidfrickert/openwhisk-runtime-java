@@ -55,18 +55,14 @@ public class FileHashingGraal {
 		long time = System.currentTimeMillis();
 
 		if (args.has("seed")) {
+			final Instant beforeClientInit = Instant.now();
+			final SimpleMinioClient client = connect(storage, new Credentials("minio", "minio123"));
+			final Duration clientInit = Duration.between(beforeClientInit, Instant.now());
 			try {
-				final Instant beforeClientInit = Instant.now();
-				SimpleMinioClient client = connect(storage, new Credentials("minio", "minio123"));
-				final Duration clientInit = Duration.between(beforeClientInit, Instant.now());
 
 				final Instant beforeRun = Instant.now();
 				hash = run(client, args.get("seed").asInt());
 				final Duration run = Duration.between(beforeRun, Instant.now());
-
-				final Instant beforeClose = Instant.now();
-				client.close();
-				final Duration close = Duration.between(beforeClose, Instant.now());
 
 				final ArrayNode metrics = mapper.createArrayNode();
 
@@ -78,10 +74,6 @@ public class FileHashingGraal {
 						.put("name", "filehashing.run")
 						.put("value", run.toMillis()));
 
-				metrics.add(mapper.createObjectNode()
-						.put("name", "filehashing.httpclient.close")
-						.put("value", close.toMillis()));
-
 				response.set("metrics", metrics);
 			} catch (Exception e) {
 				StringWriter sw = new StringWriter();
@@ -89,6 +81,8 @@ public class FileHashingGraal {
 				e.printStackTrace(pw);
 				response.put("error", sw.toString());
 				response.put("errorType", e.getClass().getName());
+			} finally {
+				client.close();
 			}
 		} else {
 			response.put("error", "hash not supplied");

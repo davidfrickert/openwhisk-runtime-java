@@ -129,7 +129,7 @@
 		<dependency>
 			<groupId>com.dfrickert</groupId>
 			<artifactId>simpleminioclient</artifactId>
-			<version>0.0.3-SNAPSHOT</version>
+			<version>0.0.4-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 </project>

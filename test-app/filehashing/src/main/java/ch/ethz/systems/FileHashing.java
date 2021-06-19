@@ -5,26 +5,28 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import javax.xml.bind.DatatypeConverter;
+
+import com.dfrickert.simpleminioclient.SimpleMinioClient;
+import com.dfrickert.simpleminioclient.auth.Credentials;
 import com.google.gson.JsonObject;
-import io.minio.MinioClient;
 
 public class FileHashing {
 
 	private static final int size = 2*1024*1024;
     private static final String storage = "http://nginx:9000";
 
-    private static MinioClient createconn() {
+    private static SimpleMinioClient createconn() {
         try {
-            return new MinioClient(storage, "minio", "minio123");
+            return new SimpleMinioClient(storage, new Credentials("minio", "minio123"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     // TODO - is this Minioclient thread safe?
-	private static String run(MinioClient minioClient, int seed, byte[] buffer) {
+	private static String run(SimpleMinioClient minioClient, int seed, byte[] buffer) {
 		try {
-			InputStream stream = minioClient.getObject("files", String.format("file-%d.dat", seed));
+			InputStream stream = minioClient.get("files", String.format("file-%d.dat", seed));
             for (int bytesread = 0;
                  bytesread < size;
                  bytesread += stream.read(buffer, bytesread, size - bytesread));
@@ -36,14 +38,14 @@ public class FileHashing {
         return null;
 	}
 
-	private static MinioClient getConn(ConcurrentHashMap<String, Object> cglobals) {
-		MinioClient con = null;
+	private static SimpleMinioClient getConn(ConcurrentHashMap<String, Object> cglobals) {
+		SimpleMinioClient con = null;
 		String key = String.format("minio-%d",Thread.currentThread().getId());
     	if (!cglobals.containsKey(key)) {
     		con = createconn();
     		cglobals.put(key, con);
     	} else {
-    		con = (MinioClient) cglobals.get(key);
+    		con = (SimpleMinioClient) cglobals.get(key);
     	}
     	return con;
 	}
