@@ -1,17 +1,20 @@
 package ch.ethz.systems;
 
-import com.google.gson.JsonObject;
-import java.lang.Thread;
-import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.nio.file.Files;
-import java.io.IOException;
-import java.nio.file.Paths;
 
 
 public class Sleep{
+    private static final ObjectMapper mapper = new ObjectMapper();
+
     private static String readAllBytes(String filePath){
         String content = "";
         try{
@@ -58,7 +61,7 @@ public class Sleep{
         return time;
 	}
 
-    public static JsonObject main(JsonObject args, Map<String, Object> globals, int id) {
+    public static ObjectNode main(JsonNode args) {
     	int time = 1000;
 
         //double mem1 = current_utilization_runtime();
@@ -66,17 +69,17 @@ public class Sleep{
         //int ss = setSlowStart(globals);
 
     	if (args.has("time")) {
-            time = args.getAsJsonPrimitive("time").getAsInt();
+            time = args.get("time").asInt();
     	}
         run(time);
 
-    	JsonObject response = new JsonObject();
+    	ObjectNode response = mapper.createObjectNode();
         /*
         double mem2 = current_utilization_runtime();
     	response.addProperty("memory", String.format("%f %f", mem1, mem2));
         response.addProperty("slow_start", String.format("%d", ss));
         */
-    	response.addProperty("slept", String.format("%d", time));
+    	response.put("slept", String.format("%d", time));
 
         return response;
 
