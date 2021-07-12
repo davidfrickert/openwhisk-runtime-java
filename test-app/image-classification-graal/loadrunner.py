@@ -12,7 +12,6 @@ import subprocess
 import random
 
 
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def execute(command):
     p = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
@@ -20,7 +19,8 @@ def execute(command):
     p_status = p.wait()
     return output
 
-ip_address = '10.147.18.27'
+
+ip_address = '10.1.212.71'
 #ip_address = '129.132.102.71'
 url='https://%s/api/v1/namespaces/_/actions/%s?blocking=true&result=true'
 headers = {
@@ -29,21 +29,21 @@ headers = {
     "User-Agent": "OpenWhisk-CLI/1.0 (2019-08-10T00:47:48.313+0000) linux amd64"
 }
 
+
 parser = ArgumentParser()
-parser.add_argument("-nt", "--number_of_threads",     type=int, default=15,  help="The number of threads")
+parser.add_argument("-nt", "--number_of_threads",     type=int, default=8,  help="The number of threads")
 parser.add_argument("-ne", "--number_of_experiments", type=int, default=100, help="Total number of requests to server")
-parser.add_argument("-wl", "--workload", type=str, default='FH', help="Workload name")
-parser.add_argument("-wl2", "--workload2", type=str, default='FH2', help="Workload2 name")
+parser.add_argument("-wl", "--workload", type=str, default='TF', help="Workload name")
+parser.add_argument("-wl2", "--workload2", type=str, default='TF2', help="Workload2 name")
 parser.add_argument("-c", "--concurrency", type=int, default=1, help="The number of threads")
 parser.add_argument("-f", "--frequency", type=int, default=10, help="Frequency of shifting workloads")
-parser.add_argument("-m", "--memory", type=int, default=256, help="Memory")
+parser.add_argument("-m", "--memory", type=int, default=512, help="Memory")
 args = parser.parse_args()
 
 
 def deploy_functions():
-    deploy_command = 'wsk --apihost https://%s --auth 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP action update -i %s filehashing.jar --main FileHashing --docker rfbpb/java8action -c %s -m %s -t 300000'
-    memory = int(args.memory)
-    dc = deploy_command%(ip_address, args.workload, str(args.concurrency), str(memory))
+    deploy_command = 'wsk --apihost https://%s --auth 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP action update -i %s tf/target/image-classifier-1.0.1.jar --main ch.ethz.InceptionImageClassifierDemo --docker rfbpb/java8action -c %s -m %s'
+    dc = deploy_command%(ip_address, args.workload, str(args.concurrency), str(args.memory))
     execute(dc)
 
     #deploy constant workload
@@ -61,8 +61,8 @@ def main():
     result_array = [0]*number_of_experiments
 
     def run_request(index):
-        time.sleep(1./random.randint(1, 1000))
-        payload = { 'time' : 1000 }
+        time.sleep(3./random.uniform(1, 10))
+        payload = { 'index' : random.randint(0, 3) }
 
         start = time.time()
 
@@ -79,12 +79,7 @@ def main():
         end = time.time()
         et = round((end-start)*1000,3)
         print(f"{payload} -> {r.text} -> {et}ms")
-
-        isSlowStart = 0 if 'slow_start\":\"0' in r.text else 1
-        # isSlowStart = 0 if 'slow_start\":\"0' in r.text else 2
-        # if isSlowStart != 0:
-        #     isSlowStart = 1 if 'slow_start\":\"1' in r.text else 2
-        return (et, isSlowStart)
+        return et
 
     pool = ThreadPoolExecutor(max_workers=number_of_threads)
 
@@ -98,12 +93,8 @@ def main():
 
     print(results)
     with open(f'data/{args.concurrency}_{args.number_of_threads}.txt', 'w') as f:
-        f.write(','.join([str(x[0]) for x in results if x[1]!= 2]))
-    with open(f'data/{args.concurrency}_{args.number_of_threads}_ss.txt', 'w') as f:
-        f.write(','.join([str(x[1]) for x in results if x[1]!= 2]))
-
-    total_execution_time = round((all_end-all_start)*1000,3)
-    #print("Experiment took", , "ms")
+      f.write(','.join([str(x) for x in results]))
+    #print("Experiment took", round((all_end-all_start)*1000,3), "ms")
 
 if __name__ == '__main__':
     main()

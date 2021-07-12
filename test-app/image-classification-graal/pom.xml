@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="https://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>pt.ulisboa.ist</groupId>
 	<packaging>jar</packaging>
 	<version>0.0.1</version>
-	<artifactId>faas-graalvm-filehashing</artifactId>
+	<artifactId>faas-graalvm-image-classifier</artifactId>
 
 	<repositories>
 		<repository>
@@ -19,7 +18,9 @@
 				<enabled>false</enabled>
 			</snapshots>
 		</repository>
+
 	</repositories>
+
 	<pluginRepositories>
 		<pluginRepository>
 			<id>central</id>
@@ -41,6 +42,7 @@
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<java.version>11</java.version>
+		<graalvm.version>21.1.0</graalvm.version>
 	</properties>
 
 	<build>
@@ -74,11 +76,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.8.1</version>
 				<configuration>
 					<source>11</source>
 					<target>11</target>
-					<release>11</release>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
@@ -102,11 +103,11 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
-							<finalName>filehashing</finalName>
+							<finalName>image-classifier</finalName>
 							<transformers>
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>ch.ethz.systems.FileHashing</mainClass>
+									<mainClass>ch.ethz.systems.InceptionImageClassifierDemo</mainClass>
 								</transformer>
 							</transformers>
 						</configuration>
@@ -115,7 +116,64 @@
 			</plugin>
 		</plugins>
 	</build>
+
+
 	<dependencies>
+		<!-- GraalVM -->
+
+		<dependency>
+			<groupId>org.graalvm.sdk</groupId>
+			<artifactId>graal-sdk</artifactId>
+			<version>${graalvm.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.graalvm.nativeimage</groupId>
+			<artifactId>svm</artifactId>
+			<version>${graalvm.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+        <dependency>
+            <groupId>ai.djl</groupId>
+            <artifactId>api</artifactId>
+            <version>0.12.0</version>
+        </dependency>
+		<dependency>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>javacpp</artifactId>
+			<!-- Only 1.5.4 works with GraalVM -->
+			<version>1.5.5</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>3.8.0</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.tensorflow</groupId>
+			<artifactId>tensorflow-engine</artifactId>
+			<version>0.12.0</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.tensorflow</groupId>
+			<artifactId>tensorflow-model-zoo</artifactId>
+			<version>0.12.0</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.tensorflow</groupId>
+			<artifactId>tensorflow-native-cpu</artifactId>
+			<classifier>linux-x86_64</classifier>
+			<scope>runtime</scope>
+			<version>2.4.1</version>
+		</dependency>
+		<dependency>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna</artifactId>
+			<version>5.8.0</version>
+		</dependency>
+
+
 		<dependency>
 			<groupId>javax.xml.bind</groupId>
 			<artifactId>jaxb-api</artifactId>
@@ -131,5 +189,6 @@
 			<artifactId>simpleminioclient</artifactId>
 			<version>0.0.4-SNAPSHOT</version>
 		</dependency>
+
 	</dependencies>
 </project>

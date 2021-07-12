@@ -20,7 +20,7 @@ def execute(command):
     p_status = p.wait()
     return output
 
-ip_address = '10.147.18.27'
+ip_address = '10.1.212.71'
 #ip_address = '129.132.102.71'
 url='https://%s/api/v1/namespaces/_/actions/%s?blocking=true&result=true'
 headers = {
@@ -32,8 +32,8 @@ headers = {
 parser = ArgumentParser()
 parser.add_argument("-nt", "--number_of_threads",     type=int, default=15,  help="The number of threads")
 parser.add_argument("-ne", "--number_of_experiments", type=int, default=100, help="Total number of requests to server")
-parser.add_argument("-wl", "--workload", type=str, default='FH', help="Workload name")
-parser.add_argument("-wl2", "--workload2", type=str, default='FH2', help="Workload2 name")
+parser.add_argument("-wl", "--workload", type=str, default='Sleep', help="Workload name")
+parser.add_argument("-wl2", "--workload2", type=str, default='Sleep2', help="Workload2 name")
 parser.add_argument("-c", "--concurrency", type=int, default=1, help="The number of threads")
 parser.add_argument("-f", "--frequency", type=int, default=10, help="Frequency of shifting workloads")
 parser.add_argument("-m", "--memory", type=int, default=256, help="Memory")
@@ -41,8 +41,8 @@ args = parser.parse_args()
 
 
 def deploy_functions():
-    deploy_command = 'wsk --apihost https://%s --auth 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP action update -i %s filehashing.jar --main FileHashing --docker rfbpb/java8action -c %s -m %s -t 300000'
-    memory = int(args.memory)
+    deploy_command = 'wsk --apihost https://%s --auth 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP action update -i %s sleep.jar --main Sleep --docker rfbpb/java8action -c %s -m %s -t 300000'
+    memory = int(args.concurrency)*int(args.memory)
     dc = deploy_command%(ip_address, args.workload, str(args.concurrency), str(memory))
     execute(dc)
 
