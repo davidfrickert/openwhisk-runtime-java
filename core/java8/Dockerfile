@@ -30,7 +30,6 @@ ENV LANG="en_US.UTF-8" \
 	BUILD=11
 
 ADD proxy /javaAction
-
 RUN cd /javaAction \
 	&& rm -rf .classpath .gitignore .gradle .project .settings Dockerfile build \
 	&& ./gradlew oneJar \

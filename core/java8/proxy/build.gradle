@@ -18,13 +18,24 @@
 apply plugin: 'java'
 
 repositories {
+    maven {
+        credentials {
+            username 'master'
+            password 'P/y70sOrRK0jggItF6l2gVV+pQGeRl/gQJjYQobQNX4zS60S4Oq4AfOrz3yWPLm4'
+        }
+        url 'http://10.147.18.110:8083/snapshots'
+        authentication {
+            basic(BasicAuthentication)
+        }
+    }
+
     mavenCentral()
 }
 
 dependencies {
     compile 'com.google.code.gson:gson:2.6.2'
     compile 'org.javassist:javassist:3.28.0-GA'
-    compile 'io.minio:minio:6.0.11'
+    compile group: 'com.dfrickert', name: 'simpleminioclient', version: '0.0.4-SNAPSHOT'
     compile group: 'org.tensorflow', name: 'tensorflow', version: '1.5.0'
 
     // Metrics support
@@ -51,3 +62,11 @@ task oneJar(type: Jar) {
     }
     with jar
 }
+
+buildscript {
+    dependencies {
+        classpath files('gradle-trust-all.jar')
+    }
+}
+
+apply plugin: 'trust-all'

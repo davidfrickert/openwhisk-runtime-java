@@ -209,12 +209,12 @@ public class Proxy {
                         ((Loader)loader).delegateLoadingOf("org.apache.openwhisk.runtime.java.action.");
                         ((Loader)loader).delegateLoadingOf("org.xmlpull.");
                         ((Loader)loader).delegateLoadingOf("okhttp3.");
-                        ((Loader)loader).delegateLoadingOf("io.micrometer");
-                        ((Loader)loader).delegateLoadingOf("io.prometheus");
+                        ((Loader)loader).delegateLoadingOf("io.micrometer.");
+                        ((Loader)loader).delegateLoadingOf("io.prometheus.");
                         ((Loader)loader).delegateLoadingOf("jdk.internal.reflect.MethodAccessorImpl");
                         ((Loader)loader).delegateLoadingOf("jdk.internal.reflect.MagicAccessorImpl");
-                        ((Loader)loader).delegateLoadingOf("com.dfrickert.simpleminioclient");
-                        ((Loader)loader).delegateLoadingOf("org.apache.commons.logging");
+                        ((Loader)loader).delegateLoadingOf("com.dfrickert.simpleminioclient.");
+                        ((Loader)loader).delegateLoadingOf("org.apache.commons.logging.");
 
                         // Add a translator to apply transformations to the loaded classes.
                         // TODO - there is a bug when loading minio!
