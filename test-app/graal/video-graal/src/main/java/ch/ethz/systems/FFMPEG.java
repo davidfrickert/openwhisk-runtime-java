@@ -18,7 +18,9 @@ import java.util.regex.Pattern;
 
 public class FFMPEG {
 
-	public static SimpleMinioClient minioClient = null;
+	private static SimpleMinioClient minioClient = null;
+
+	private static final String DEFAULT_FILE = "cat.mp4";
 
 	private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -62,26 +64,8 @@ public class FFMPEG {
 
 	}
 
-	public static void init_classifier() {
-		try {
-			// cls.load_model(ResourceUtils.getInputStream("tf_models/tensorflow_inception_graph.pb"));
-			minioClient = new SimpleMinioClient("http://r630-01:9000", new Credentials("keykey", "secretsecret"));
-			InputStream is = minioClient.get("files", "ffmpeg");
-			copyInputStreamToFile(is, new File("ffmpeg"));
-			Process process = Runtime.getRuntime().exec("chmod +x ./ffmpeg");
-			process.waitFor();
-		} catch (Exception e) {
-			StringWriter sw = new StringWriter();
-			PrintWriter pw = new PrintWriter(sw);
-			e.printStackTrace(pw);
-			String sStackTrace = sw.toString(); // stack trace as a string
-			throw new RuntimeException("1" + sStackTrace);
-		}
-
-	}
-
 	private static void ffmpeg(String fileName) throws Exception{
-		FFmpeg ffmpeg = new FFmpeg("./ffmpeg");
+		FFmpeg ffmpeg = new FFmpeg("/usr/bin/ffmpeg");
 
 		FFmpegBuilder builder = new FFmpegBuilder()
 
@@ -102,9 +86,9 @@ public class FFMPEG {
 		new File("out"+fileName).delete();
 	}
 
-	public static void transform() {
+	public static void transform(final String filename) {
 		try {
-			InputStream is = minioClient.get("files", "911511005.mp4");
+			InputStream is = minioClient.get("files", filename);
 			String fileName = UUID.randomUUID() + ".mp4";
 			copyInputStreamToFile(is, new File(fileName));
 			ffmpeg(fileName);
@@ -123,11 +107,16 @@ public class FFMPEG {
 		boolean slow_start = true;
 		double m0 = current_utilization_runtime();
 
-		init_classifier();
+		if (minioClient == null) {
+			minioClient = new SimpleMinioClient("http://10.147.18.27:8999", new Credentials("minio", "minio123"));
+		}
 
 		double m1 = current_utilization_runtime();
 
-		transform();
+		// TODO handle the possibility of filename not being supplied!
+		String filename = args.get("filename").asText(DEFAULT_FILE);
+
+		transform(filename);
 
 		double m2 = current_utilization_runtime();
 		ObjectNode response = mapper.createObjectNode();

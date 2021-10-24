@@ -4,6 +4,12 @@
 	xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<parent>
+		<artifactId>faas-graalvm-parent</artifactId>
+		<groupId>pt.ulisboa.ist</groupId>
+		<version>0.0.1</version>
+	</parent>
+
 	<groupId>pt.ulisboa.ist</groupId>
 	<packaging>jar</packaging>
 	<version>0.0.1</version>
