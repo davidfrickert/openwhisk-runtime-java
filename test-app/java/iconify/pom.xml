@@ -108,11 +108,11 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
-							<finalName>video</finalName>
+							<finalName>iconify</finalName>
 							<transformers>
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>ch.ethz.systems.FFMPEG</mainClass>
+									<mainClass>pt.ulisboa.ist.Iconify</mainClass>
 								</transformer>
 							</transformers>
 						</configuration>
