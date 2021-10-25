@@ -47,7 +47,15 @@ public class Iconify {
                 return response;
             }
 
-            InputStream imageIS = client.get("files",  filename);
+
+            CloseableHttpResponse getResponse = client.get("files",  filename);
+
+            if (getResponse.getStatusLine().getStatusCode() >= 400) {
+                response.addProperty("internalErrorCode", getResponse.getStatusLine().getStatusCode());
+                response.addProperty("detailedError", EntityUtils.toString(getResponse.getEntity()));
+                return response;
+            }
+            InputStream imageIS = getResponse.getEntity().getContent();
             BufferedImage srcImage = ImageIO.read(imageIS);
 
             int srcHeight = srcImage.getHeight();
