@@ -21,7 +21,7 @@ public class Login {
         try {
 			MongoCredential credential = MongoCredential.createCredential("root", "mydatabase", "root".toCharArray());
 			MongoCredential credentialAdmin = MongoCredential.createCredential("root", "admin", "root".toCharArray());
-            return new MongoClient(new ServerAddress("mongodb_mongo_1", 27017), List.of(credential, credentialAdmin));
+            return new MongoClient(new ServerAddress("192.168.200.150", 27017), List.of(credential, credentialAdmin));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -108,7 +108,7 @@ public class FFMPEG {
 		double m0 = current_utilization_runtime();
 
 		if (minioClient == null) {
-			minioClient = new SimpleMinioClient("http://10.147.18.27:8999", new Credentials("minio", "minio123"));
+			minioClient = new SimpleMinioClient("http://192.168.200.150:8999", new Credentials("minio", "minio123"));
 		}
 
 		double m1 = current_utilization_runtime();

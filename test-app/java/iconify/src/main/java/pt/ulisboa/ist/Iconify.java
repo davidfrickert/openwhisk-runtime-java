@@ -29,7 +29,7 @@ public class Iconify {
     private static final String PNG_MIME = "image/png";
 
     public static JsonObject main(JsonObject args, Map<String, Object> globals, int id) {
-        final SimpleMinioClient client = new SimpleMinioClient("http://10.147.18.27:8999", new Credentials("minio", "minio123"));
+        final SimpleMinioClient client = new SimpleMinioClient("http://192.168.200.150:8999", new Credentials("minio", "minio123"));
 
         JsonObject response = new JsonObject();
 
