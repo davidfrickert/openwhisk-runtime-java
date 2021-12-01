@@ -13,7 +13,7 @@ import com.google.gson.JsonObject;
 public class FileHashing {
 
 	private static final int size = 2*1024*1024;
-    private static final String storage = "http://nginx:9000";
+	private static final String storage = "http://146.193.41.231:8999";
 
     private static SimpleMinioClient createconn() {
         try {
