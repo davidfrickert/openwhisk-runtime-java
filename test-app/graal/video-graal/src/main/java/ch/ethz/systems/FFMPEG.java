@@ -88,7 +88,7 @@ public class FFMPEG {
 
 	public static void transform(final String filename) {
 		try {
-			InputStream is = minioClient.get("files", filename);
+			InputStream is = minioClient.get("files", filename).getEntity().getContent();
 			String fileName = UUID.randomUUID() + ".mp4";
 			copyInputStreamToFile(is, new File(fileName));
 			ffmpeg(fileName);
@@ -113,7 +113,6 @@ public class FFMPEG {
 
 		double m1 = current_utilization_runtime();
 
-		// TODO handle the possibility of filename not being supplied!
 		String filename = args.get("filename").asText(DEFAULT_FILE);
 
 		transform(filename);

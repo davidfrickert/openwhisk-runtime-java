@@ -66,7 +66,7 @@ public class FFMPEG {
 			if (minioClient == null) {
 				minioClient = new SimpleMinioClient("http://146.193.41.231:8999", new Credentials("minio", "minio123"));
 			}
-			InputStream is = minioClient.get("files", "ffmpeg");
+			InputStream is = minioClient.get("files", "ffmpeg").getEntity().getContent();
 			copyInputStreamToFile(is, new File("ffmpeg"));
 			Process process = Runtime.getRuntime().exec("chmod +x ./ffmpeg");
 			process.waitFor();
@@ -104,7 +104,7 @@ public class FFMPEG {
 
 	public static void transform(int id, String filename) {
 		try {
-			InputStream is = minioClient.get("files", filename);
+			InputStream is = minioClient.get("files", filename).getEntity().getContent();
 			String fileName = id + ".mp4";
 			copyInputStreamToFile(is, new File(fileName));
 			ffmpeg(fileName);

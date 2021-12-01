@@ -26,7 +26,7 @@ public class FileHashing {
     // TODO - is this Minioclient thread safe?
 	private static String run(SimpleMinioClient minioClient, int seed, byte[] buffer) {
 		try {
-			InputStream stream = minioClient.get("files", String.format("file-%d.dat", seed));
+			InputStream stream = minioClient.get("files", String.format("file-%d.dat", seed)).getEntity().getContent();
             for (int bytesread = 0;
                  bytesread < size;
                  bytesread += stream.read(buffer, bytesread, size - bytesread));

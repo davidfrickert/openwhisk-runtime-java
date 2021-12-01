@@ -48,7 +48,7 @@ public class InceptionImageClassifierDemo {
         ObjectNode response = mapper.createObjectNode();
 
         try {
-            img = ResourceUtils.getImage(minioClient.get("files/image-classification", image_path));
+            img = ResourceUtils.getImage(minioClient.get("files/image-classification", image_path).getEntity().getContent());
             String predicted_label = classifier.predict_image(img);
 
             response.put("predicted", predicted_label);

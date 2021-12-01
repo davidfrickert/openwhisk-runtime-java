@@ -1,15 +1,11 @@
 package ch.ethz.systems;
 
+import com.google.gson.JsonObject;
+import com.mongodb.*;
+
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import com.google.gson.JsonObject;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
 
 
 public class Login {
@@ -38,11 +34,12 @@ public class Login {
 	
 	public static boolean login(ConcurrentHashMap<String, Object> globals, String username, String password) {
 		MongoClient mc = getConn(globals);
-		DB database = mc.getDB("mydatabase");
-		DBCollection collection = database.getCollection("customers");
-		DBObject query = new BasicDBObject("username", username);
-		DBCursor cursor = collection.find(query);
-		return ((String)cursor.one().get("password")).equals(password);
+		var database = mc.getDatabase("mydatabase");
+		var collection = database.getCollection("users");
+		var query = new BasicDBObject("username", username);
+		var findIterable = collection.find(query);
+
+		return findIterable.cursor().next().getString("password").equals(password);
 	}
     
     public static JsonObject main(JsonObject args, Map<String, Object> globals, int id) {
