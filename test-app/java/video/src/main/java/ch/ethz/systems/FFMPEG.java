@@ -1,28 +1,24 @@
 package ch.ethz.systems;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.dfrickert.simpleminioclient.SimpleMinioClient;
+import com.dfrickert.simpleminioclient.auth.Credentials;
 import com.google.gson.JsonObject;
-
-import io.minio.MinioClient;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFmpegExecutor;
 import net.bramp.ffmpeg.builder.FFmpegBuilder;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class FFMPEG {
 
-	public static MinioClient minioClient = null;
+	private static SimpleMinioClient minioClient = null;
+
+	private static final String DEFAULT_FILE = "cat.mp4";
 
 	private static String readAllBytes(String filePath){
         String content = "";
@@ -67,8 +63,10 @@ public class FFMPEG {
 	public static void init_classifier() {
 		try {
 			// cls.load_model(ResourceUtils.getInputStream("tf_models/tensorflow_inception_graph.pb"));
-			minioClient = new MinioClient("http://r630-01:9000", "keykey", "secretsecret");
-			InputStream is = minioClient.getObject("files", "ffmpeg");
+			if (minioClient == null) {
+				minioClient = new SimpleMinioClient("http://146.193.41.231:8999", new Credentials("minio", "minio123"));
+			}
+			InputStream is = minioClient.get("files", "ffmpeg");
 			copyInputStreamToFile(is, new File("ffmpeg"));
 			Process process = Runtime.getRuntime().exec("chmod +x ./ffmpeg");
 			process.waitFor();
@@ -104,10 +102,10 @@ public class FFMPEG {
 		new File("out"+fileName).delete();
 	}
 
-	public static void transform(int id) {
+	public static void transform(int id, String filename) {
 		try {
-			InputStream is = minioClient.getObject("files", "911511005.mp4");
-			String fileName = Integer.toString(id) + ".mp4";
+			InputStream is = minioClient.get("files", filename);
+			String fileName = id + ".mp4";
 			copyInputStreamToFile(is, new File(fileName));
 			ffmpeg(fileName);
 
@@ -121,11 +119,6 @@ public class FFMPEG {
 
 	}
 
-	public static void main(String[] args) throws IOException {
-		HashMap<String, Object> m = new HashMap<String, Object>();
-		main(null, m, 0);
-	}
-
 	public static JsonObject main(JsonObject args, Map<String, Object> globals, int id) {
 		boolean slow_start = true;
 		double m0 = current_utilization_runtime();
@@ -134,13 +127,15 @@ public class FFMPEG {
 				init_classifier();
 				globals.put("minio", minioClient);
 			} else {
-				minioClient = (MinioClient) globals.get("minio");
+				minioClient = (SimpleMinioClient) globals.get("minio");
 				slow_start = false;
 			}
 		}
 		double m1 = current_utilization_runtime();
 
-		transform(id);
+		String filename = args.get("filename").isJsonNull() ? DEFAULT_FILE : args.get("filename").getAsString();
+
+		transform(id, filename);
 
 		double m2 = current_utilization_runtime();
 		JsonObject response = new JsonObject();
