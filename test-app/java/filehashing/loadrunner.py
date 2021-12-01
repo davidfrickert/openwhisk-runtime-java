@@ -20,7 +20,7 @@ def execute(command):
     p_status = p.wait()
     return output
 
-ip_address = '192.168.200.150'
+ip_address = '146.193.41.231'
 #ip_address = '129.132.102.71'
 url='https://%s/api/v1/namespaces/_/actions/%s?blocking=true&result=true'
 headers = {

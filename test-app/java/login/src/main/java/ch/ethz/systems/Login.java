@@ -14,7 +14,7 @@ import com.mongodb.MongoClientURI;
 
 public class Login {
 
-    private static final String db = "mongodb://192.168.200.150:27017";
+    private static final String db = "mongodb://146.193.41.231:27017";
 
     private static MongoClient createconn() {
         try {

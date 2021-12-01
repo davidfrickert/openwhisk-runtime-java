@@ -32,7 +32,7 @@ public class Iconify {
     private static final String PNG_MIME = "image/png";
 
     public static ObjectNode main(JsonNode args) {
-        final SimpleMinioClient client = new SimpleMinioClient("http://192.168.200.150:8999", new Credentials("minio", "minio123"));
+        final SimpleMinioClient client = new SimpleMinioClient("http://146.193.41.231:8999", new Credentials("minio", "minio123"));
 
         final ObjectNode response = mapper.createObjectNode();
 
