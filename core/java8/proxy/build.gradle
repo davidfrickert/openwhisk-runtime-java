@@ -62,11 +62,3 @@ task oneJar(type: Jar) {
     }
     with jar
 }
-
-buildscript {
-    dependencies {
-        classpath files('gradle-trust-all.jar')
-    }
-}
-
-apply plugin: 'trust-all'
