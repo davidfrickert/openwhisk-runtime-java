@@ -14,15 +14,15 @@ import com.mongodb.MongoClientURI;
 
 public class Login {
 
-    private static final String db = "mongodb://146.193.41.231:27017";
-
-    private static MongoClient createconn() {
-        try {
-            return new MongoClient(new MongoClientURI(db));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+	private static MongoClient createconn() {
+		try {
+			MongoCredential credential = MongoCredential.createCredential("root", "mydatabase", "root".toCharArray());
+			MongoCredential credentialAdmin = MongoCredential.createCredential("root", "admin", "root".toCharArray());
+			return new MongoClient(new ServerAddress("146.193.41.231", 27017), List.of(credential, credentialAdmin));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
     
 	private static MongoClient getConn(ConcurrentHashMap<String, Object> cglobals) {
 		MongoClient con = null;
