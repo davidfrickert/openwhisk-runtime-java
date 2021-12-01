@@ -35,7 +35,7 @@ repositories {
 dependencies {
     compile 'com.google.code.gson:gson:2.8.6'
     compile 'org.javassist:javassist:3.28.0-GA'
-    compile group: 'com.dfrickert', name: 'simpleminioclient', version: '0.0.4-SNAPSHOT'
+    compile group: 'com.dfrickert', name: 'simpleminioclient', version: '0.1.0-SNAPSHOT'
     compile group: 'org.tensorflow', name: 'tensorflow', version: '1.5.0'
 
     // Metrics support
