@@ -37,7 +37,6 @@ dependencies {
     compile 'org.javassist:javassist:3.28.0-GA'
     compile group: 'com.dfrickert', name: 'simpleminioclient', version: '0.1.0-SNAPSHOT'
     compile group: 'org.tensorflow', name: 'tensorflow', version: '1.5.0'
-    compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.12.8'
 
     // Metrics support
     compile group: 'io.micrometer', name: 'micrometer-core', version: '1.6.6'

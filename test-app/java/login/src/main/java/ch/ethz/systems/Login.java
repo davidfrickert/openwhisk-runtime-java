@@ -12,8 +12,8 @@ public class Login {
 
 	private static MongoClient createconn() {
 		try {
-			MongoCredential credential = MongoCredential.createCredential("root", "mydatabase", "root".toCharArray());
-			MongoCredential credentialAdmin = MongoCredential.createCredential("root", "admin", "root".toCharArray());
+			MongoCredential credential = MongoCredential.createPlainCredential("root", "mydatabase", "root".toCharArray());
+			MongoCredential credentialAdmin = MongoCredential.createPlainCredential("root", "admin", "root".toCharArray());
 			return new MongoClient(new ServerAddress("146.193.41.231", 27017), List.of(credential, credentialAdmin));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -34,12 +34,11 @@ public class Login {
 	
 	public static boolean login(ConcurrentHashMap<String, Object> globals, String username, String password) {
 		MongoClient mc = getConn(globals);
-		var database = mc.getDatabase("mydatabase");
-		var collection = database.getCollection("users");
-		var query = new BasicDBObject("username", username);
-		var findIterable = collection.find(query);
-
-		return findIterable.cursor().next().getString("password").equals(password);
+		DB database = mc.getDB("mydatabase");
+		DBCollection collection = database.getCollection("users");
+		DBObject query = new BasicDBObject("username", username);
+		DBCursor cursor = collection.find(query);
+		return ((String)cursor.one().get("password")).equals(password);
 	}
     
     public static JsonObject main(JsonObject args, Map<String, Object> globals, int id) {
