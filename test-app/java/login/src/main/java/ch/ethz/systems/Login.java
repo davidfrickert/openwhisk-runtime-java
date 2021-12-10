@@ -1,7 +1,10 @@
 package ch.ethz.systems;
 
 import com.google.gson.JsonObject;
-import com.mongodb.*;
+import com.mongodb.BasicDBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 
 import java.util.List;
 import java.util.Map;
