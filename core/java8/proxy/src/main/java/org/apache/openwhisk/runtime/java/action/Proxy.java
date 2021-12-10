@@ -215,6 +215,10 @@ public class Proxy {
                         ((Loader)loader).delegateLoadingOf("jdk.internal.reflect.MagicAccessorImpl");
                         ((Loader)loader).delegateLoadingOf("com.dfrickert.simpleminioclient.");
                         ((Loader)loader).delegateLoadingOf("org.apache.commons.logging.");
+                        // Due to unitialized private static boolean --> NPE
+                        ((Loader)loader).delegateLoadingOf("com.mongodb.internal.connection.Time");
+                        // Due to conflicts --> java.lang.LinkageError: loading constraint violation: loader \"javassist/Loader@b1ffb6e4\" previously initiated loading for a different type with name \"org/apache/http/client/methods/CloseableHttpResponse\" defined by loader \"jdk/internal/loader/ClassLoaders$AppClassLoader@5b6d54c7\"
+                        ((Loader)loader).delegateLoadingOf("org.apache.http.");
 
                         // Add a translator to apply transformations to the loaded classes.
                         // TODO - there is a bug when loading minio!
