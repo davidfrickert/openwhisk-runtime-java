@@ -24,6 +24,8 @@ public class FileHashingGraal {
 	private static final int size = 2*1024*1024;
 	private static final String storage = "http://146.193.41.231:8999";
 
+	private static SimpleMinioClient minioClient;
+
 	private static SimpleMinioClient connect(String minioLocation, Credentials accessCredentials) {
 		try {
 			return new SimpleMinioClient(minioLocation, accessCredentials);
@@ -56,12 +58,15 @@ public class FileHashingGraal {
 
 		if (args.has("seed")) {
 			final Instant beforeClientInit = Instant.now();
-			final SimpleMinioClient client = connect(storage, new Credentials("minio", "minio123"));
+
+			if (minioClient == null) {
+				minioClient =  connect(storage, new Credentials("minio", "minio123"));
+			}
 			final Duration clientInit = Duration.between(beforeClientInit, Instant.now());
 			try {
 
 				final Instant beforeRun = Instant.now();
-				hash = run(client, args.get("seed").asInt());
+				hash = run(minioClient, args.get("seed").asInt());
 				final Duration run = Duration.between(beforeRun, Instant.now());
 
 				final ArrayNode metrics = mapper.createArrayNode();
@@ -81,8 +86,6 @@ public class FileHashingGraal {
 				e.printStackTrace(pw);
 				response.put("error", sw.toString());
 				response.put("errorType", e.getClass().getName());
-			} finally {
-				client.close();
 			}
 		} else {
 			response.put("error", "hash not supplied");
@@ -91,10 +94,11 @@ public class FileHashingGraal {
 
 		response.put("hash", hash);
 		response.put("time", System.currentTimeMillis() - time);
-
+		/*
 		for (Thread t : Thread.getAllStackTraces().keySet()) {
 			System.out.println("WARN: Thread still running! " + t.toString());
 		}
+		 */
 		return response;
 	}
 

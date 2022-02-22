@@ -22,7 +22,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Iconify {
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static ObjectMapper mapper;
+    private static SimpleMinioClient client;
 
     private static final float MAX_WIDTH = 100;
     private static final float MAX_HEIGHT = 100;
@@ -31,9 +32,30 @@ public class Iconify {
     private static final String PNG_TYPE = "png";
     private static final String PNG_MIME = "image/png";
 
-    public static ObjectNode main(JsonNode args) {
-        final SimpleMinioClient client = new SimpleMinioClient("http://146.193.41.231:8999", new Credentials("minio", "minio123"));
+    private static synchronized void initialize() {
+        if (client == null) {
+            mapper = new ObjectMapper();
+            client = new SimpleMinioClient("http://146.193.41.231:8999", new Credentials("minio", "minio123"));
+            // Thread to cleanup resources when interrupt is called on all active threads
+            new Thread() {
+                @Override
+                public void interrupt() {
+                    super.interrupt();
+                    client.close();
+                    client = null;
+                }
 
+                @Override
+                public void run() {
+                    try {
+                        sleep(Long.MAX_VALUE);
+                    } catch (InterruptedException ignored) { }
+                }
+            }.start();
+        }
+    }
+
+    public static ObjectNode main(JsonNode args) {
         final ObjectNode response = mapper.createObjectNode();
 
         try {
@@ -103,7 +125,7 @@ public class Iconify {
                         response.put("detailedError", body);
                     }
                 }
-
+                return response;
             }
 
             return response
@@ -117,6 +139,5 @@ public class Iconify {
                     .put("errorMessage", e.getMessage())
                     .put("detailedErrorMessage", ExceptionUtils.getStackTrace(e));
         }
-
     }
 }
