@@ -22,7 +22,7 @@ public class FFMPEG {
 
 	private static final String DEFAULT_FILE = "cat.mp4";
 
-	private static final ObjectMapper mapper = new ObjectMapper();
+	private static ObjectMapper mapper;
 
 	private static String readAllBytes(String filePath){
         String content = "";
@@ -108,7 +108,18 @@ public class FFMPEG {
 		double m0 = current_utilization_runtime();
 
 		if (minioClient == null) {
+			mapper = new ObjectMapper();
 			minioClient = new SimpleMinioClient("http://146.193.41.231:8999", new Credentials("minio", "minio123"));
+			// Thread to cleanup resources when interrupt is called on all active threads
+			new Thread(() -> {
+				try {
+					Thread.sleep(Long.MAX_VALUE);
+				} catch (InterruptedException ignored) {
+					minioClient.close();
+					minioClient = null;
+					mapper = null;
+				}
+			}).start();
 		}
 
 		double m1 = current_utilization_runtime();

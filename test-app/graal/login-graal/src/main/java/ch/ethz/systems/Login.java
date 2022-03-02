@@ -21,6 +21,15 @@ public class Login {
         try {
 			MongoCredential credential = MongoCredential.createCredential("root", "mydatabase", "root".toCharArray());
 			MongoCredential credentialAdmin = MongoCredential.createCredential("root", "admin", "root".toCharArray());
+			// Thread to cleanup resources when interrupt is called on all active threads
+			new Thread(() -> {
+				try {
+					Thread.sleep(Long.MAX_VALUE);
+				} catch (InterruptedException ignored) {
+					client.close();
+					client = null;
+				}
+			}).start();
             return new MongoClient(new ServerAddress("146.193.41.231", 27017), List.of(credential, credentialAdmin));
         } catch (Exception e) {
             throw new RuntimeException(e);

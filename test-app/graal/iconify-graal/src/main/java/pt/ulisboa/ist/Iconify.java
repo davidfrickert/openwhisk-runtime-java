@@ -37,25 +37,22 @@ public class Iconify {
             mapper = new ObjectMapper();
             client = new SimpleMinioClient("http://146.193.41.231:8999", new Credentials("minio", "minio123"));
             // Thread to cleanup resources when interrupt is called on all active threads
-            new Thread() {
-                @Override
-                public void interrupt() {
-                    super.interrupt();
+            new Thread(() -> {
+                try {
+                    Thread.sleep(Long.MAX_VALUE);
+                } catch (InterruptedException ignored) {
                     client.close();
                     client = null;
+                    mapper = null;
                 }
-
-                @Override
-                public void run() {
-                    try {
-                        sleep(Long.MAX_VALUE);
-                    } catch (InterruptedException ignored) { }
-                }
-            }.start();
+            }).start();
         }
     }
 
     public static ObjectNode main(JsonNode args) {
+        if (client == null) {
+            initialize();
+        }
         final ObjectNode response = mapper.createObjectNode();
 
         try {

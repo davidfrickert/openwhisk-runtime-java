@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.http.client.methods.CloseableHttpResponse;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -28,6 +29,16 @@ public class FileHashingGraal {
 
 	private static SimpleMinioClient connect(String minioLocation, Credentials accessCredentials) {
 		try {
+			// Thread to cleanup resources when interrupt is called on all active threads
+			new Thread(() -> {
+				try {
+					Thread.sleep(Long.MAX_VALUE);
+				} catch (InterruptedException ignored) {
+					System.out.println("Closing minio client");
+					minioClient.close();
+					minioClient = null;
+				}
+			}).start();
 			return new SimpleMinioClient(minioLocation, accessCredentials);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -44,8 +55,10 @@ public class FileHashingGraal {
 		Request{method=GET, url=http://146.193.41.231:8999/files?location=, headers=[Host:146.193.41.231:8999, Accept-Encoding:identity, User-Agent:MinIO (Linux; amd64) minio-java/dev, Content-MD5:1B2M2Y8AsgTpgAmY7PhCfg==, x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855, x-amz-date:20210610T171938Z, Authorization:AWS4-HMAC-SHA256 Credential=minio/20210610/us-east-1/s3/aws4_request, SignedHeaders=content-md5;host;x-amz-content-sha256;x-amz-date, Signature=1427e44b517bda011563c0fda359bd1338c5f33b5fc328a9030fc46b708b9487]}
 		Request{method=GET, url=http://146.193.41.231:8999/files/file-1.dat, headers=[Host:146.193.41.231:8999, Accept-Encoding:identity, User-Agent:MinIO (Linux; amd64) minio-java/dev, Content-MD5:1B2M2Y8AsgTpgAmY7PhCfg==, x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855, x-amz-date:20210610T171938Z, Authorization:AWS4-HMAC-SHA256 Credential=minio/20210610/us-east-1/s3/aws4_request, SignedHeaders=content-md5;host;x-amz-content-sha256;x-amz-date, Signature=b57b17c16f8b6479aab1daf6e5d5c7900110898766c25dd7e4cedbf6a0f1e731]}
 		 */
-		try (InputStream stream = minioClient.get("files",String.format("file-%d.dat", seed)).getEntity().getContent()) {
-			for (int bytesread = 0; bytesread < size; bytesread += stream.read(buffer, bytesread, size - bytesread));
+		try (CloseableHttpResponse r = minioClient.get("files",String.format("file-%d.dat", seed))) {
+			try (InputStream stream = r.getEntity().getContent()) {
+				for (int bytesread = 0; bytesread < size; bytesread += stream.read(buffer, bytesread, size - bytesread)) ;
+			}
 		}
 		return DatatypeConverter.printHexBinary(MessageDigest.getInstance("MD5").digest(buffer));
 	}
