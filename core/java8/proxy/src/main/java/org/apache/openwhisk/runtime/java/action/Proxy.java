@@ -17,9 +17,8 @@
 
 package org.apache.openwhisk.runtime.java.action;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -53,7 +52,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+
 import javassist.ClassPool;
 import javassist.Loader;
 import org.apache.openwhisk.runtime.java.action.metrics.MemoryHelper;
@@ -62,7 +61,7 @@ import org.apache.openwhisk.runtime.java.action.metrics.MetricsSupport;
 
 public class Proxy {
     private HttpServer server;
-    private final MetricsPusher metricsPusher;
+    private MetricsPusher metricsPusher;
 
     private ClassLoader loader = null;
 
@@ -72,11 +71,11 @@ public class Proxy {
 
     private ConcurrentHashMap<String, Object> globals = new ConcurrentHashMap<>();
 
-    private MetricsSupport metricsSupport = MetricsSupport.get();
+    private MetricsSupport metricsSupport;
 
-    private final Timer invocationTimer;
-    private final AtomicInteger concurrentExecutions;
-    private final AtomicInteger maxConcurrentExecutions;
+    private Timer invocationTimer;
+    private AtomicInteger concurrentExecutions;
+    private AtomicInteger maxConcurrentExecutions;
 
     public Proxy(int port) throws IOException {
         this.server = HttpServer.create(new InetSocketAddress(port), -1);
@@ -84,16 +83,6 @@ public class Proxy {
         this.server.createContext("/init", new InitHandler());
         this.server.createContext("/run", new RunHandler());
         this.server.setExecutor(Executors.newCachedThreadPool());
-
-        this.metricsPusher = new MetricsPusher(metricsSupport);
-        this.invocationTimer = metricsSupport.getMeterRegistry().timer("exec_time");
-        metricsSupport.getMeterRegistry().gauge("memory_after", Collections.emptyList(), Runtime.getRuntime(),
-                                                MemoryHelper::heapMemory);
-        metricsSupport.getMeterRegistry().gauge("memory_rss", Collections.emptyList(), Runtime.getRuntime(),
-                                                MemoryHelper::rssMemory);
-
-        this.concurrentExecutions = metricsSupport.getMeterRegistry().gauge("concurrent_executions", new AtomicInteger(0));
-        this.maxConcurrentExecutions = metricsSupport.getMeterRegistry().gauge("max_concurrent_executions", new AtomicInteger(0));
     }
 
     public void start() {
@@ -120,7 +109,9 @@ public class Proxy {
         final String entrypointClassName = splittedEntrypoint[0];
         final String entrypointMethodName = splittedEntrypoint.length > 1 ? splittedEntrypoint[1] : "main";
 
-        metricsSupport.withFunctionName(entrypointClassName + "::" + entrypointMethodName);
+        String[] splitClassName = entrypointClassName.split("\\.");
+
+        prepareMetrics(splitClassName[splitClassName.length - 1]);
 
         Class<?> mainClass = loader.loadClass(entrypointClassName);
 
@@ -130,6 +121,22 @@ public class Proxy {
         if (main.getReturnType() != JsonObject.class || !Modifier.isStatic(modifiers) || !Modifier.isPublic(modifiers)) {
             throw new NoSuchMethodException("main");
         }
+    }
+
+    private void prepareMetrics(final String functionName) {
+        this.metricsSupport = MetricsSupport.get();
+        this.metricsSupport.setFunctionName(functionName);
+
+        this.metricsPusher = new MetricsPusher(metricsSupport);
+        this.invocationTimer = metricsSupport.getMeterRegistry().timer("exec_time");
+        metricsSupport.getMeterRegistry().gauge("memory_after", Collections.emptyList(), Runtime.getRuntime(),
+                MemoryHelper::heapMemory);
+        metricsSupport.getMeterRegistry().gauge("memory_rss", Collections.emptyList(), Runtime.getRuntime(),
+                MemoryHelper::rssMemory);
+
+        this.concurrentExecutions = metricsSupport.getMeterRegistry().gauge("concurrent_executions", new AtomicInteger(0));
+        this.maxConcurrentExecutions = metricsSupport.getMeterRegistry().gauge("max_concurrent_executions", new AtomicInteger(0));
+
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

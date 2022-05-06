@@ -60,7 +60,7 @@ public class MetricsSupport {
         }
     }
 
-    public void withFunctionName(String functionName) {
+    public void setFunctionName(String functionName) {
         registry.config()
                 .commonTags("function.name", functionName);
     }
