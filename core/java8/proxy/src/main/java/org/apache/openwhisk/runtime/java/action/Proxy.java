@@ -87,7 +87,6 @@ public class Proxy {
 
     public void start() {
         server.start();
-        metricsPusher.start();
     }
 
     private static Path saveBase64EncodedFile(InputStream encoded) throws Exception {
@@ -136,7 +135,7 @@ public class Proxy {
 
         this.concurrentExecutions = metricsSupport.getMeterRegistry().gauge("concurrent_executions", new AtomicInteger(0));
         this.maxConcurrentExecutions = metricsSupport.getMeterRegistry().gauge("max_concurrent_executions", new AtomicInteger(0));
-
+        metricsPusher.start();
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
